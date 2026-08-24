@@ -76,6 +76,69 @@ FROM ielts_writing_dataset
 WHERE Overall >= 7.0
 GROUP BY Task_Type
 
-/* (Prompts & Comments Insights)
-Which specific writing questions (prompts) have the lowest average scores? */
+/* Q6: Which specific writing questions prompts have the lowest average scores for Task 1? */
+--Step 1: Question type classification
+SELECT
+	Task_Type,
+	Question,
+	Essay,
+	CASE
+		WHEN Question + Essay LIKE '%bar%' OR Question + Essay LIKE '%column%' THEN 'Bar graph'
+		WHEN Question + Essay LIKE '%line%' OR Question + Essay LIKE '%fluctuat%' THEN 'Line Graph'
+		WHEN Question + Essay LIKE '%pie chart%' THEN 'Pie Chart'
+		WHEN Question + Essay LIKE '%table%' THEN 'Table'
+		WHEN Question + Essay LIKE '%map%' THEN 'Map'
+		WHEN Question + Essay LIKE '%diagram' OR Question + Essay LIKE '%flowchart%' OR Question + Essay LIKE '%process%' THEN 'Diagram'
+		ELSE 'Topic not found'
+		END AS question_format
+FROM ielts_writing_dataset
+WHERE Task_Type = 1
+--Step 2: Found specific writing questions (prompts) have the lowest average scores
+SELECT
+	COUNT(*) AS total_question_format,
+	ROUND(CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM ielts_writing_dataset) AS DECIMAL(5,2)),2) AS Percentage,
+	ROUND(AVG(Overall), 2) AS average_score_by_question_prompt,
+	question_format
+FROM question_type_classification
+GROUP BY question_format
+ORDER BY average_score_by_question_prompt
+
+/* Q7: Which specific writing questions prompts have the lowest average scores for Task 2?*/
+
+WITH categorizing_task_2_questions AS (
+SELECT
+	Task_Type,
+	Question
+	CASE
+		WHEN DISTINCT Question LIKE '%To what extent do you agree or disagree%' OR Question LIKE '%Do you agree or disagree%' OR Question LIKE '%What is your opinion%' THEN 'Agree/Disagree'
+		WHEN DISTINCT Question LIKE '%Discuss both views and give your opinion%' OR Question LIKE '%Discuss both sides of this argument%' THEN 'Both Views'
+		WHEN DISTINCT Question  LIKE '%Do the advantages outweigh the disadvantages%' OR Question LIKE '%Is this a positive or negative%' OR Question LIKE '%What are the advantages and disadvantages%' THEN 'Advantages & Disadvantages'
+		WHEN DISTINCT Question  LIKE '%What are the causes%' OR Question LIKE '%what measures can be taken%' OR Question LIKE '%What problems does this cause%' OR Question LIKE '%What are the solutions%' THEN 'Causes & Solutions'
+		WHEN DISTINCT Question  LIKE '%Why is this the case' THEN ' Two-Part Question'
+		ELSE 'Topic not found'
+		END AS question_format_task_2
+FROM ielts_writing_dataset
+WHERE Task_Type = 2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
