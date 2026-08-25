@@ -1,3 +1,50 @@
+/* Let evaluate the dataset, and clean the data */
+
+--Step 1: Check for duplication
+
+SELECT 
+    (SELECT COUNT(*) FROM ielts_writing_dataset) 
+    - 
+    (SELECT COUNT(*) FROM (SELECT DISTINCT * FROM ielts_writing_dataset) AS unique_rows) 
+AS remaining_duplicate_row;
+
+---------Remove duplicate rows and verify the deletion
+
+WITH duplicate_row_line AS (
+ SELECT *,
+           ROW_NUMBER() OVER (
+               PARTITION BY Task_Type, Question, Essay, Examiner_Commen,
+               Task_Response, Coherence_Cohesion, Lexical_Resource,
+               Range_Accuracy, Overall ORDER BY (SELECT NULL)
+           ) AS row_num
+    FROM ielts_writing_dataset)
+DELETE FROM duplicate_row_line
+WHERE row_num > 1;
+
+--Step 2: Check whether the essay task 1 meets Cambridge University Press & Assessment's requirement of 150 words
+
+SELECT Overall, Question, Essay, LEN(TRIM(Essay)) - LEN(REPLACE(TRIM(Essay), ' ', '')) + 1 AS Word_count
+FROM ielts_writing_dataset
+WHERE (LEN(TRIM(Essay)) - LEN(REPLACE(TRIM(Essay), ' ', '')) + 1) <150 AND Task_Type = 1;
+
+--Step 3: Check whether the essay task 2 meets Cambridge University Press & Assessment's requirement of 250 words
+SELECT Overall, Question, Essay
+FROM ielts_writing_dataset
+WHERE (LEN(TRIM(Essay)) - LEN(REPLACE(TRIM(Essay), ' ', '')) + 1) <250 AND Task_Type = 2;
+
+--Step 4: During the analysis, I discovered an invalid 'question' value and deleted it :D
+
+SELECT Question, Essay
+FROM ielts_writing_dataset
+WHERE LEN(Question)<40;
+
+--Let Delete and verify the deletion
+
+DELETE FROM ielts_writing_dataset WHERE LEN(Question)<40;
+SELECT * FROM ielts_writing_dataset WHERE LEN(Question)<40;
+
+
+
 
 /*Q1: What is the overall score distribution (count and percentage) of essays across the dataset? */
 
@@ -108,7 +155,7 @@ ORDER BY average_score_by_question_prompt
 WITH categorizing_task_2_questions AS (
 SELECT
 	DISTINCT Question,
-	Task_Type
+	Overall,
 	CASE
 		WHEN Question LIKE '%To what extent do you agree or disagree%' OR Question LIKE '%Do you agree or disagree%' OR Question LIKE '%What is your opinion%' THEN 'Agree/Disagree'
 		WHEN Question LIKE '%Discuss both views and give your opinion%' OR Question LIKE '%Discuss both sides of this argument%' THEN 'Both Views'
@@ -119,6 +166,12 @@ SELECT
 		END AS question_format_task_2
 FROM ielts_writing_dataset
 WHERE Task_Type = 2)
+SELECT question_format_task_2, ROUND(AVG(Overall),2) AS avg_scores_task_2
+FROM categorizing_task_2_questions
+GROUP BY question_format_task_2
+ORDER BY avg_scores_task_2;
+
+
 
 
 
