@@ -107,14 +107,14 @@ ORDER BY average_score_by_question_prompt
 
 WITH categorizing_task_2_questions AS (
 SELECT
-	Task_Type,
-	Question
+	DISTINCT Question,
+	Task_Type
 	CASE
-		WHEN DISTINCT Question LIKE '%To what extent do you agree or disagree%' OR Question LIKE '%Do you agree or disagree%' OR Question LIKE '%What is your opinion%' THEN 'Agree/Disagree'
-		WHEN DISTINCT Question LIKE '%Discuss both views and give your opinion%' OR Question LIKE '%Discuss both sides of this argument%' THEN 'Both Views'
-		WHEN DISTINCT Question  LIKE '%Do the advantages outweigh the disadvantages%' OR Question LIKE '%Is this a positive or negative%' OR Question LIKE '%What are the advantages and disadvantages%' THEN 'Advantages & Disadvantages'
-		WHEN DISTINCT Question  LIKE '%What are the causes%' OR Question LIKE '%what measures can be taken%' OR Question LIKE '%What problems does this cause%' OR Question LIKE '%What are the solutions%' THEN 'Causes & Solutions'
-		WHEN DISTINCT Question  LIKE '%Why is this the case' THEN ' Two-Part Question'
+		WHEN Question LIKE '%To what extent do you agree or disagree%' OR Question LIKE '%Do you agree or disagree%' OR Question LIKE '%What is your opinion%' THEN 'Agree/Disagree'
+		WHEN Question LIKE '%Discuss both views and give your opinion%' OR Question LIKE '%Discuss both sides of this argument%' THEN 'Both Views'
+		WHEN Question  LIKE '%Do the advantages outweigh the disadvantages%' OR Question LIKE '%Is this a positive or negative%' OR Question LIKE '%What are the advantages and disadvantages%' THEN 'Advantages & Disadvantages'
+		WHEN Question  LIKE '%What are the causes%' OR Question LIKE '%what measures can be taken%' OR Question LIKE '%What problems does this cause%' OR Question LIKE '%What are the solutions%' THEN 'Causes & Solutions'
+		WHEN Question  LIKE '%Why is this the case' THEN ' Two-Part Question'
 		ELSE 'Topic not found'
 		END AS question_format_task_2
 FROM ielts_writing_dataset
