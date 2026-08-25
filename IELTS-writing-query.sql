@@ -21,30 +21,16 @@ WITH duplicate_row_line AS (
 DELETE FROM duplicate_row_line
 WHERE row_num > 1;
 
---Step 2: Check whether the essay task 1 meets Cambridge University Press & Assessment's requirement of 150 words
+--Step 2: During the analysis, I discovered an invalid 'question' value and deleted it :D
 
-SELECT Overall, Question, Essay, LEN(TRIM(Essay)) - LEN(REPLACE(TRIM(Essay), ' ', '')) + 1 AS Word_count
+SELECT Question
 FROM ielts_writing_dataset
-WHERE (LEN(TRIM(Essay)) - LEN(REPLACE(TRIM(Essay), ' ', '')) + 1) <150 AND Task_Type = 1;
-
---Step 3: Check whether the essay task 2 meets Cambridge University Press & Assessment's requirement of 250 words
-SELECT Overall, Question, Essay
-FROM ielts_writing_dataset
-WHERE (LEN(TRIM(Essay)) - LEN(REPLACE(TRIM(Essay), ' ', '')) + 1) <250 AND Task_Type = 2;
-
---Step 4: During the analysis, I discovered an invalid 'question' value and deleted it :D
-
-SELECT Question, Essay
-FROM ielts_writing_dataset
-WHERE LEN(Question)<40;
+WHERE (LEN(TRIM(Question)) - LEN(REPLACE(TRIM(Question), ' ', '')) + 1)=1;
 
 --Let Delete and verify the deletion
 
-DELETE FROM ielts_writing_dataset WHERE LEN(Question)<40;
-SELECT * FROM ielts_writing_dataset WHERE LEN(Question)<40;
-
-
-
+DELETE FROM ielts_writing_dataset WHERE (LEN(TRIM(Question)) - LEN(REPLACE(TRIM(Question), ' ', '')) + 1)=1;
+SELECT * FROM ielts_writing_dataset WHERE (LEN(TRIM(Question)) - LEN(REPLACE(TRIM(Question), ' ', '')) + 1)=1;
 
 /*Q1: What is the overall score distribution (count and percentage) of essays across the dataset? */
 
@@ -171,27 +157,55 @@ FROM categorizing_task_2_questions
 GROUP BY question_format_task_2
 ORDER BY avg_scores_task_2;
 
+/* Q8: Let categorize Examiner_Commen according to each criterion and calculate the average score for each criterion that has feedback.*/
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+WITH category_by_Examiner_Commen AS (
+SELECT 
+    Overall,
+    Examiner_Commen,
+    CASE 
+        -- 1. TASK RESPONSE
+        WHEN Examiner_Commen LIKE '%well-developed%' 
+          OR Examiner_Commen LIKE '%off-topic%' 
+          OR Examiner_Commen LIKE '%task points%'
+          OR Examiner_Commen LIKE '%prompt%'
+          OR Examiner_Commen LIKE '%idea%'
+          OR Examiner_Commen LIKE '%cover%' THEN 'Task Response'
+        
+        -- 2. COHERENCE & COHESION
+        WHEN Examiner_Commen LIKE '%logical%' 
+          OR Examiner_Commen LIKE '%structured%' 
+          OR Examiner_Commen LIKE '%disorgan%' 
+          OR Examiner_Commen LIKE '%coherence%'
+          OR Examiner_Commen LIKE '%cohes%'
+          OR Examiner_Commen LIKE '%paragraph%'
+          OR Examiner_Commen LIKE '%link%' THEN 'Coherence & Cohesion'
+        
+        -- 3. LEXICAL RESOURCE
+        WHEN Examiner_Commen LIKE '%uncommon%' 
+          OR Examiner_Commen LIKE '%precise%' 
+          OR Examiner_Commen LIKE '%limited%' 
+          OR Examiner_Commen LIKE '%vocabulary%'
+          OR Examiner_Commen LIKE '%vocab%'
+          OR Examiner_Commen LIKE '%lexical%'
+          OR Examiner_Commen LIKE '%word%' THEN 'Lexical Resource'
+        
+        -- 4. GRAMMATICAL RANGE & ACCURACY
+        WHEN Examiner_Commen LIKE '%error-free%'
+		  OR Examiner_Commen LIKE '%complex%' 
+          OR Examiner_Commen LIKE '%grammar error%' 
+          OR Examiner_Commen LIKE '%sentences%'
+          OR Examiner_Commen LIKE '%gram%'
+          OR Examiner_Commen LIKE '%sentence%' THEN 'Grammatical Range & Accuracy'
+        
+        ELSE 'Other/General Comments'
+    END AS criteria_mentioned_by_the_judges
+FROM ielts_writing_dataset
+WHERE Examiner_Commen IS NOT NULL AND Examiner_Commen <> '')
+SELECT criteria_mentioned_by_the_judges,
+    ROUND(AVG(Overall), 2) AS average_overall_score_by_criteria,
+    COUNT(*) AS total_feedback
+FROM category_by_Examiner_Commen
+GROUP BY criteria_mentioned_by_the_judges
+ORDER BY average_overall_score_by_criteria DESC;
 
